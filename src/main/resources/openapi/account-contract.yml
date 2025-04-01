@@ -1,0 +1,653 @@
+openapi: 3.0.3
+info:
+  title: Account Service API
+  description: |
+    API para gestión de cuentas bancarias (ahorro, corriente, plazo fijo).
+    Implementa todas las operaciones requeridas por el negocio bancario.
+  version: 1.0.1
+  contact:
+    name: Equipo de Cuentas Bancarias
+    email: cuentas@nttdata.com
+
+servers:
+  - url: https://api.bank.com/account-service/v1
+    description: Servidor de producción
+  - url: http://localhost:8082/api/v1
+    description: Servidor local de desarrollo
+
+tags:
+  - name: Accounts
+    description: Operaciones CRUD con cuentas bancarias
+  - name: AccountTransactions
+    description: Operaciones transaccionales de cuentas
+  - name: AccountBalances
+    description: Consultas de saldos y movimientos
+
+paths:
+  /accounts:
+    post:
+      tags: [Accounts]
+      summary: Crear nueva cuenta bancaria
+      description: |
+        Crea una nueva cuenta con validaciones estrictas:
+        - Cliente debe existir
+        - Restricciones por tipo de cliente (PERSONAL/BUSINESS)
+        - Límites de productos permitidos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountCreateRequest'
+            examples:
+              savingsAccount:
+                value:
+                  type: "SAVINGS"
+                  customerId: "5f8d8a7b2f4d4b1d9c3e3f1a"
+                  currency: "PEN"
+                  initialBalance: 1000.00
+              checkingAccount:
+                value:
+                  type: "CHECKING"
+                  customerId: "5f8d8a7b2f4d4b1d9c3e3f2b"
+                  currency: "USD"
+                  holders: ["5f8d8a7b2f4d4b1d9c3e3f2b", "5f8d8a7b2f4d4b1d9c3e3f2c"]
+                  signers: ["5f8d8a7b2f4d4b1d9c3e3f2d"]
+      responses:
+        '201':
+          description: Cuenta creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDetails'
+          headers:
+            Location:
+              description: URL del recurso creado
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    get:
+      tags: [Accounts]
+      summary: Listar cuentas (admin)
+      description: Lista paginada de todas las cuentas (solo para administradores)
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - name: type
+          in: query
+          description: Filtrar por tipo de cuenta
+          schema:
+            $ref: '#/components/schemas/AccountType'
+        - name: status
+          in: query
+          description: Filtrar por estado
+          schema:
+            $ref: '#/components/schemas/AccountStatus'
+      responses:
+        '200':
+          description: Lista de cuentas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountListResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /accounts/{accountId}:
+    get:
+      tags: [Accounts]
+      summary: Obtener detalles de cuenta
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+      responses:
+        '200':
+          description: Detalles completos de la cuenta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDetails'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Accounts]
+      summary: Actualizar cuenta parcialmente
+      description: Actualiza campos específicos de una cuenta (solo campos permitidos)
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUpdateRequest'
+      responses:
+        '200':
+          description: Cuenta actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDetails'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /accounts/customer/{customerId}:
+    get:
+      tags: [Accounts]
+      summary: Listar cuentas por cliente
+      parameters:
+        - $ref: '#/components/parameters/customerId'
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+      responses:
+        '200':
+          description: Lista de cuentas del cliente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /accounts/{accountId}/deposits:
+    post:
+      tags: [AccountTransactions]
+      summary: Realizar depósito
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositRequest'
+            example:
+              amount: 500.00
+              description: "Depósito en efectivo"
+              channel: "BRANCH"
+      responses:
+        '200':
+          description: Depósito realizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResult'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /accounts/{accountId}/withdrawals:
+    post:
+      tags: [AccountTransactions]
+      summary: Realizar retiro
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalRequest'
+      responses:
+        '200':
+          description: Retiro realizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResult'
+        '400':
+          description: |
+            Posibles errores:
+            - Saldo insuficiente
+            - Límite de movimientos excedido
+            - Cuenta inactiva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /accounts/{accountId}/balance:
+    get:
+      tags: [AccountBalances]
+      summary: Consultar saldo
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+      responses:
+        '200':
+          description: Saldo actual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /accounts/{accountId}/transactions:
+    get:
+      tags: [AccountBalances]
+      summary: Listar transacciones
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/TransactionType'
+      responses:
+        '200':
+          description: Lista de transacciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    # Tipos enumerados
+    AccountType:
+      type: string
+      enum: [SAVINGS, CHECKING, FIXED_TERM]
+      description: |
+        SAVINGS - Cuenta de ahorros (límite de movimientos)
+        CHECKING - Cuenta corriente (comisión de mantenimiento)
+        FIXED_TERM - Plazo fijo (solo un movimiento por mes)
+      example: "SAVINGS"
+
+    AccountStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, BLOCKED, CLOSED]
+      default: "ACTIVE"
+
+    TransactionType:
+      type: string
+      enum: [DEPOSIT, WITHDRAWAL, TRANSFER, FEE, INTEREST]
+
+    CurrencyCode:
+      type: string
+      pattern: '^[A-Z]{3}$'
+      example: "PEN"
+
+    # Esquemas principales
+    AccountCreateRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/AccountType'
+        customerId:
+          type: string
+          format: uuid
+          description: ID del cliente titular
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        initialBalance:
+          type: number
+          format: double
+          minimum: 0
+          default: 0
+        holders:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Lista de IDs de titulares adicionales (obligatorio para cuentas empresariales)
+        signers:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Lista de IDs de firmantes autorizados
+      required:
+        - type
+        - customerId
+        - currency
+
+    AccountDetails:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        accountNumber:
+          type: string
+          readOnly: true
+          example: "193-876543-1-23"
+        type:
+          $ref: '#/components/schemas/AccountType'
+        balance:
+          type: number
+          format: double
+          minimum: 0
+          example: 1500.00
+        availableBalance:
+          type: number
+          format: double
+          minimum: 0
+          readOnly: true
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        customerId:
+          type: string
+          format: uuid
+        holders:
+          type: array
+          items:
+            type: string
+            format: uuid
+        signers:
+          type: array
+          items:
+            type: string
+            format: uuid
+        monthlyTransactionLimit:
+          type: integer
+          nullable: true
+          description: Solo aplica para cuentas de ahorro
+          example: 5
+        transactionCount:
+          type: integer
+          readOnly: true
+        maintenanceFee:
+          type: number
+          format: double
+          minimum: 0
+          example: 0.00
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    AccountUpdateRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        monthlyTransactionLimit:
+          type: integer
+          nullable: true
+          minimum: 1
+        maintenanceFee:
+          type: number
+          format: double
+          minimum: 0
+        holders:
+          type: array
+          items:
+            type: string
+            format: uuid
+        signers:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    AccountListResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountDetails'
+        page:
+          type: integer
+          example: 0
+        size:
+          type: integer
+          example: 20
+        totalElements:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 5
+
+    # Esquemas para transacciones
+    DepositRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 500.00
+        description:
+          type: string
+          maxLength: 255
+          example: "Depósito en efectivo"
+        channel:
+          type: string
+          enum: [BRANCH, ATM, MOBILE, WEB, TRANSFER]
+          example: "BRANCH"
+      required:
+        - amount
+        - channel
+
+    WithdrawalRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 300.00
+        description:
+          type: string
+          maxLength: 255
+          example: "Retiro en ventanilla"
+        channel:
+          type: string
+          enum: [BRANCH, ATM, MOBILE, WEB, TRANSFER]
+          example: "BRANCH"
+      required:
+        - amount
+        - channel
+
+    TransactionResult:
+      type: object
+      properties:
+        transactionId:
+          type: string
+          format: uuid
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        accountId:
+          type: string
+          format: uuid
+        newBalance:
+          type: number
+          format: double
+          example: 2000.00
+        transactionDate:
+          type: string
+          format: date-time
+        message:
+          type: string
+          example: "Operación realizada exitosamente"
+
+    BalanceResponse:
+      type: object
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        balance:
+          type: number
+          format: double
+          example: 1500.00
+        availableBalance:
+          type: number
+          format: double
+          example: 1500.00
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        lastTransactionDate:
+          type: string
+          format: date-time
+          nullable: true
+
+    TransactionListResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionDetail'
+        page:
+          type: integer
+          example: 0
+        size:
+          type: integer
+          example: 20
+        totalElements:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 5
+
+    TransactionDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/TransactionType'
+        amount:
+          type: number
+          format: double
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        reference:
+          type: string
+        channel:
+          type: string
+          enum: [BRANCH, ATM, MOBILE, WEB, TRANSFER]
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+
+  parameters:
+    accountId:
+      name: accountId
+      in: path
+      required: true
+      description: ID único de la cuenta
+      schema:
+        type: string
+        format: uuid
+        example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+
+    customerId:
+      name: customerId
+      in: path
+      required: true
+      description: ID único del cliente
+      schema:
+        type: string
+        format: uuid
+        example: "5f8d8a7b2f4d4b1d9c3e3f1a"
+
+    page:
+      name: page
+      in: query
+      description: Número de página (0-based)
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    size:
+      name: size
+      in: query
+      description: Tamaño de la página
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    InvalidRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            timestamp: "2023-03-15T10:00:00Z"
+            status: 400
+            error: "Bad Request"
+            message: "El tipo de cuenta no es compatible con el tipo de cliente"
+            path: "/api/v1/accounts"
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: Conflicto con el estado actual
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Acceso no autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
