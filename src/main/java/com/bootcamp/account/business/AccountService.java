@@ -1,7 +1,9 @@
 package com.bootcamp.account.business;
 
+import com.bootcamp.account.mapper.AccountMapper;
+import com.bootcamp.account.model.dto.AccountDto;
 import com.bootcamp.account.model.entity.Account;
-import com.bootcamp.account.model.entity.Customer;
+import com.bootcamp.account.model.dto.CustomerDto;
 import com.bootcamp.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,7 +32,8 @@ public class AccountService {
         return accountRepository.findByCustomerId(customerId);
     }
 
-    public Mono<Account> create(Account account) {
+    public Mono<Account> create(AccountDto dto) {
+        var account = AccountMapper.dtoToEntity(dto);
         return validateCustomerType(account.getCustomerId(), account.getType())
             .then(validateAccountLimits(account.getCustomerId(), account.getType()))
             .then(accountRepository.existsByAccountNumber(account.getAccountNumber()))
@@ -42,11 +45,11 @@ public class AccountService {
     private Mono<Void> validateCustomerType(String customerId, Account.AccountType accountType) {
         return webClientBuilder.build()
                 .get()
-                .uri("http://localhost:8085/api/v/customer/{id}", customerId)
+                .uri("http://localhost:8085/api/v1/customer/{id}", customerId)
                 .retrieve()
-                .bodyToMono(Customer.class)
+                .bodyToMono(CustomerDto.class)
                 .flatMap(customer -> {
-                    if (customer.getType() == Customer.CustomerType.BUSINESS &&
+                    if (customer.getType() == CustomerDto.CustomerType.BUSINESS &&
                             (accountType == Account.AccountType.AHORRO || accountType == Account.AccountType.PLAZO_FIJO)) {
                         return Mono.error(new IllegalArgumentException(
                                 "Business customers cannot have savings or fixed-term accounts"));

@@ -1,4 +1,4 @@
-package com.bootcamp.account.model.entity;
+package com.bootcamp.account.model.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,21 +11,13 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Customer {
-
+public class CustomerDto {
 
     private String id;
-
     private String name;
     private CustomerType type;
-
-    @Field("doc_type")
     private String docType;
-
-    @Field("doc_number")
     private String docNumber;
-
-
     public enum CustomerType {
         PERSONAL, BUSINESS
     }

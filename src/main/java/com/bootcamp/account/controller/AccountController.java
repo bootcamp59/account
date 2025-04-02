@@ -1,6 +1,7 @@
 package com.bootcamp.account.controller;
 
 import com.bootcamp.account.business.AccountService;
+import com.bootcamp.account.model.dto.AccountDto;
 import com.bootcamp.account.model.entity.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,8 +35,8 @@ public class AccountController {
     }
 
     @PostMapping
-    public Mono<ResponseEntity<Account>> create(@RequestBody Account account){
-        return service.create(account)
+    public Mono<ResponseEntity<Account>> create(@RequestBody AccountDto dto){
+        return service.create(dto)
             .map(savedAccount -> ResponseEntity.status(HttpStatus.CREATED).body(savedAccount))
             .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
     }
