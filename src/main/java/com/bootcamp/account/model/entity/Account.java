@@ -1,5 +1,6 @@
 package com.bootcamp.account.model.entity;
 
+import com.bootcamp.account.enums.AccountType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -45,7 +46,5 @@ public class Account {
     private List<String> holders; // For business accounts (multiple holders) titulares
     private List<String> authorizedSigners; // For business accounts firmantes
 
-    public enum AccountType {
-        AHORRO, CUENTA_CORRIENTE, PLAZO_FIJO
-    }
+
 }

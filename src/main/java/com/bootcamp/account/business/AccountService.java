@@ -1,5 +1,7 @@
 package com.bootcamp.account.business;
 
+import com.bootcamp.account.enums.AccountType;
+import com.bootcamp.account.enums.CustomerType;
 import com.bootcamp.account.mapper.AccountMapper;
 import com.bootcamp.account.model.dto.AccountDto;
 import com.bootcamp.account.model.entity.Account;
@@ -42,24 +44,24 @@ public class AccountService {
                 : saveNewAccount(account));
     }
 
-    private Mono<Void> validateCustomerType(String customerId, Account.AccountType accountType) {
+    private Mono<Void> validateCustomerType(String customerId, AccountType accountType) {
         return webClientBuilder.build()
-                .get()
-                .uri("http://localhost:8085/api/v1/customer/{id}", customerId)
-                .retrieve()
-                .bodyToMono(CustomerDto.class)
-                .flatMap(customer -> {
-                    if (customer.getType() == CustomerDto.CustomerType.BUSINESS &&
-                            (accountType == Account.AccountType.AHORRO || accountType == Account.AccountType.PLAZO_FIJO)) {
-                        return Mono.error(new IllegalArgumentException(
-                                "Business customers cannot have savings or fixed-term accounts"));
-                    }
-                    return Mono.empty();
-                });
+            .get()
+            .uri("http://localhost:8085/api/v1/customer/{id}", customerId)
+            .retrieve()
+            .bodyToMono(CustomerDto.class)
+            .flatMap(customer -> {
+                if (customer.getType() == CustomerType.BUSINESS &&
+                        (accountType == AccountType.AHORRO || accountType == AccountType.PLAZO_FIJO)) {
+                    return Mono.error(new IllegalArgumentException(
+                            "Business customers cannot have savings or fixed-term accounts"));
+                }
+                return Mono.empty();
+            });
     }
 
-    private Mono<Void> validateAccountLimits(String customerId, Account.AccountType accountType) {
-        if (accountType == Account.AccountType.AHORRO || accountType == Account.AccountType.CUENTA_CORRIENTE) {
+    private Mono<Void> validateAccountLimits(String customerId, AccountType accountType) {
+        if (accountType == AccountType.AHORRO || accountType == AccountType.CUENTA_CORRIENTE) {
             return accountRepository.findByCustomerIdAndType(customerId, accountType)
                     .count()
                     .flatMap(count -> {

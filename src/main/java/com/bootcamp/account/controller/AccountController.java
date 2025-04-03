@@ -37,8 +37,7 @@ public class AccountController {
     @PostMapping
     public Mono<ResponseEntity<Account>> create(@RequestBody AccountDto dto){
         return service.create(dto)
-            .map(savedAccount -> ResponseEntity.status(HttpStatus.CREATED).body(savedAccount))
-            .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
+            .map(savedAccount -> ResponseEntity.status(HttpStatus.CREATED).body(savedAccount));
     }
 
     @PutMapping("/{id}")
