@@ -35,7 +35,7 @@ public class AccountController {
     }
 
     @PostMapping
-    public Mono<ResponseEntity<Account>> create(@RequestBody AccountDto dto){
+    public Mono<ResponseEntity<Void>> create(@RequestBody AccountDto dto){
         return service.create(dto)
             .map(savedAccount -> ResponseEntity.status(HttpStatus.CREATED).body(savedAccount));
     }
