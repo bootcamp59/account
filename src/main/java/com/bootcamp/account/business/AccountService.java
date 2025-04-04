@@ -37,26 +37,20 @@ public class AccountService {
     public Mono<Void> create(AccountDto dto) {
         var account = AccountMapper.dtoToEntity(dto);
         return Mono.just(account)
-                .flatMap(acc -> fetchCustomerData(acc)
-                        .flatMap(customer -> account.getType().validate(customer, accountRepository))
-                );
-        /*return validateCustomerType(account.getCustomerId(), account.getType())
-            .then(validateAccountLimits(account.getCustomerId(), account.getType()))
-            .then(accountRepository.existsByAccountNumber(account.getAccountNumber()))
-            .flatMap(exists -> exists
-                ? Mono.error(new IllegalArgumentException("Account number already exists"))
-                : saveNewAccount(account));
-
-         */
+            .flatMap(acc ->
+                fetchCustomerData(acc)
+                .flatMap(customer -> account.getType().validate(customer, accountRepository)).then(saveNewAccount(account))
+                        .then()
+            );
     }
 
     private Mono<CustomerDto> fetchCustomerData(Account account) {
         return webClientBuilder.build()
-                .get()
-                .uri("http://localhost:8085/api/v1/customer/{id}", account.getCustomerId())
-                .retrieve()
-                .bodyToMono(CustomerDto.class)
-                .map(customer -> customer);
+            .get()
+            .uri("http://localhost:8085/api/v1/customer/{id}", account.getCustomerId())
+            .retrieve()
+            .bodyToMono(CustomerDto.class)
+            .map(customer -> customer);
     }
 
 
