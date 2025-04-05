@@ -14,8 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -99,12 +104,25 @@ public class AccountService {
     public Mono<Account> update(String id, Account account) {
         return accountRepository.findById(id)
                 .flatMap(existingAccount -> {
-                    existingAccount.setBalance(account.getBalance());
-                    existingAccount.setMaintenanceFee(account.getMaintenanceFee());
-                    existingAccount.setMonthlyTransactionLimit(account.getMonthlyTransactionLimit());
-                    existingAccount.setAllowedDayOfMonth(account.getAllowedDayOfMonth());
-                    existingAccount.setTitulares(account.getTitulares());
-                    existingAccount.setAuthorizedSigners(account.getAuthorizedSigners());
+                    if(account.getBalance() != 0){
+                        existingAccount.setBalance(existingAccount.getBalance() + account.getBalance());
+                    }
+                    if(account.getMaintenanceFee() != null){
+                        existingAccount.setMaintenanceFee(account.getMaintenanceFee());
+                    }
+                    if(account.getMonthlyTransactionLimit() != null){
+                        existingAccount.setMonthlyTransactionLimit(account.getMonthlyTransactionLimit());
+                    }
+                    if(account.getAllowedDayOfMonth() != null){
+                        existingAccount.setAllowedDayOfMonth(account.getAllowedDayOfMonth());
+                    }
+                    if(account.getTitulares() != null){
+                        existingAccount.setTitulares(account.getTitulares());
+                    }
+                    if(account.getAuthorizedSigners() != null){
+                        existingAccount.setAuthorizedSigners(account.getAuthorizedSigners());
+                    }
+
                     return accountRepository.save(existingAccount);
                 });
     }
