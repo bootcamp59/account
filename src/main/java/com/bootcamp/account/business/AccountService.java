@@ -6,6 +6,8 @@ import com.bootcamp.account.mapper.AccountMapper;
 import com.bootcamp.account.model.dto.AccountDto;
 import com.bootcamp.account.model.entity.Account;
 import com.bootcamp.account.model.dto.CustomerDto;
+import com.bootcamp.account.reglas.AccountValidationChain;
+import com.bootcamp.account.reglas.ValidationChainFactory;
 import com.bootcamp.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,14 +36,17 @@ public class AccountService {
         return accountRepository.findByCustomerId(customerId);
     }
 
-    public Mono<Void> create(AccountDto dto) {
+    public Mono<Account> create(AccountDto dto) {
         var account = AccountMapper.dtoToEntity(dto);
         return Mono.just(account)
-            .flatMap(acc ->
-                fetchCustomerData(acc)
-                .flatMap(customer -> account.getType().validate(customer, accountRepository)).then(saveNewAccount(account))
-                        .then()
-            );
+            .flatMap(this::fetchCustomerData)
+                .flatMap(customer -> {
+                    AccountValidationChain chain = ValidationChainFactory.forCustomerType(customer.getType());
+                    return chain.execute(account, customer, accountRepository)
+                            .then(saveNewAccount(account));
+                });
+
+
     }
 
     private Mono<CustomerDto> fetchCustomerData(Account account) {
@@ -98,7 +103,7 @@ public class AccountService {
                     existingAccount.setMaintenanceFee(account.getMaintenanceFee());
                     existingAccount.setMonthlyTransactionLimit(account.getMonthlyTransactionLimit());
                     existingAccount.setAllowedDayOfMonth(account.getAllowedDayOfMonth());
-                    existingAccount.setHolders(account.getHolders());
+                    existingAccount.setTitulares(account.getTitulares());
                     existingAccount.setAuthorizedSigners(account.getAuthorizedSigners());
                     return accountRepository.save(existingAccount);
                 });
