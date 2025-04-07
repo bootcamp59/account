@@ -39,7 +39,7 @@ public class AccountController {
         return service.findByIdAndCustomerId(id, customerId)
                 .map(a -> {
                     return a != null;
-                });
+                }).defaultIfEmpty(false);
     }
 
     @PostMapping
