@@ -2,6 +2,7 @@ package com.bootcamp.account.business;
 
 import com.bootcamp.account.enums.AccountType;
 import com.bootcamp.account.enums.CustomerType;
+import com.bootcamp.account.error.AccountErrorResponse;
 import com.bootcamp.account.mapper.AccountMapper;
 import com.bootcamp.account.model.dto.AccountDto;
 import com.bootcamp.account.model.entity.Account;
@@ -47,6 +48,7 @@ public class AccountService {
 
     public Mono<Account> create(AccountDto dto) {
         var account = AccountMapper.dtoToEntity(dto);
+        validaciones(dto);
         return Mono.just(account)
             .flatMap(this::fetchCustomerData)
                 .flatMap(customer -> {
@@ -133,5 +135,35 @@ public class AccountService {
 
     public Mono<Void> delete(String id) {
         return accountRepository.deleteById(id);
+    }
+
+    private void validaciones(AccountDto request){
+        if(request.getType() == AccountType.AHORRO){
+            if(request.getMaintenanceFee() != null && request.getMaintenanceFee() > 0){
+                throw new RuntimeException("Cuenta de ahorro esta libre de comisión por mantenimiento");
+            }
+            if(request.getMonthlyTransactionLimit() == null || request.getMonthlyTransactionLimit() == 0){
+                throw new RuntimeException("Cuenta de ahorro debe tener un limite maximo de movimientos mensual");
+            }
+        }
+        if(request.getType() == AccountType.CUENTA_CORRIENTE){
+            if(request.getMaintenanceFee() == null || request.getMaintenanceFee() == 0){
+                throw new RuntimeException("Cuenta corriente debe tener una comisión por mantenimiento");
+            }
+            if(request.getMonthlyTransactionLimit() > 0 ){
+                throw new RuntimeException("Cuenta corriente no debe tener limite de movimientos");
+            }
+        }
+        if(request.getType() == AccountType.PLAZO_FIJO){
+            if(request.getMaintenanceFee() != null && request.getMaintenanceFee() > 0){
+                throw new RuntimeException("Cuenta Plazo fijo debe estar libre de comisión por mantenimiento");
+            }
+            if(request.getMonthlyTransactionLimit() == null || request.getMonthlyTransactionLimit() != 1){
+                throw new RuntimeException("Cuenta Plazo fijo solo puede hacer una transaccion al mes");
+            }
+            if(request.getAllowedDayOfMonth() == null || request.getAllowedDayOfMonth() == 0){
+                throw new RuntimeException("Cuenta Plazo se debe asignar un dia para realizar cualquier transaction");
+            }
+        }
     }
 }
