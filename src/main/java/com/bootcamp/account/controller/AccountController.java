@@ -34,6 +34,14 @@ public class AccountController {
         return service.findByCustomerId(id);
     }
 
+    @GetMapping("/{id}/customer/{customerId}")
+    public Mono<Boolean> findByCustomerId(@PathVariable String id, @PathVariable String customerId){
+        return service.findByIdAndCustomerId(id, customerId)
+                .map(a -> {
+                    return a != null;
+                });
+    }
+
     @PostMapping
     public Mono<ResponseEntity<Account>> create(@RequestBody AccountDto dto){
         return service.create(dto)

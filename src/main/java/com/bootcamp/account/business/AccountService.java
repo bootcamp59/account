@@ -41,6 +41,10 @@ public class AccountService {
         return accountRepository.findByCustomerId(customerId);
     }
 
+    public Mono<Account> findByIdAndCustomerId(String id, String customerId) {
+        return accountRepository.findByIdAndCustomerId(id, customerId);
+    }
+
     public Mono<Account> create(AccountDto dto) {
         var account = AccountMapper.dtoToEntity(dto);
         return Mono.just(account)

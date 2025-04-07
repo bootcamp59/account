@@ -37,18 +37,24 @@ public class PersonalAccountValidations {
     }
 
     public static AccountValidation noTieneTitulares() {
-        return (account, customer, repo) ->
-            Optional.ofNullable(account.getTitulares())
-                .filter(List::isEmpty)
-                .map(a -> Mono.<Void>empty())
-                .orElseGet( () -> Mono.error(new RuntimeException("Solo cuentas empresariales pueden tener titulares")));
+        return (account, customer, repo) -> {
+            if(account.getTitulares() != null && !account.getTitulares().isEmpty()){
+                return Mono.error(new RuntimeException("Solo cuentas empresariales pueden tener titulares"));
+            } else {
+                return Mono.<Void>empty();
+            }
+        };
+
     }
 
     public static AccountValidation noTieneFirmantes() {
-        return (account, customer, repo) ->
-            Optional.ofNullable(account.getAuthorizedSigners())
-                .filter(List::isEmpty)
-                .map(a -> Mono.<Void>empty())
-                .orElseGet( () -> Mono.error(new RuntimeException("Solo cuentas empresariales pueden tener firmantes")));
+        return (account, customer, repo) -> {
+          if(account.getAuthorizedSigners() != null && !account.getAuthorizedSigners().isEmpty()){
+              return Mono.error(new RuntimeException("Solo cuentas empresariales pueden tener firmantes"));
+          } else {
+              return Mono.<Void>empty();
+          }
+        };
+
     }
 }
