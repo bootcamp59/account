@@ -1,10 +1,10 @@
 package com.bootcamp.account.reglas;
 
+import com.bootcamp.account.client.CreditoClient;
 import com.bootcamp.account.enums.AccountType;
+import com.bootcamp.account.enums.CustomerType;
+import com.bootcamp.account.model.entity.Account;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.Optional;
 
 public class PersonalAccountValidations {
 
@@ -57,4 +57,29 @@ public class PersonalAccountValidations {
         };
 
     }
+
+    public static AccountValidation requiredCreditCard(CreditoClient creditoClient) {
+        return (account, customer, repo) -> {
+            var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getId();
+            if(account.getType() == AccountType.AHORRO){
+                if(customer.getPerfil().equalsIgnoreCase("VIP")){
+                    return creditoClient.get(url)
+                        .hasElements()
+                        .flatMap(hasCredit -> {
+                            if (hasCredit) {
+                                return Mono.empty();
+                            } else {
+                                return Mono.error(new RuntimeException("Clientes VIP tienen que tener una tarjeta de credito previamente, para poder crear su cuenta de ahorro"));
+                            }
+                        });
+                }
+
+            }
+            return Mono.empty();
+        };
+    }
+
+
+
+
 }

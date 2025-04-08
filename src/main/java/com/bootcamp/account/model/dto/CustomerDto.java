@@ -19,4 +19,5 @@ public class CustomerDto {
     private CustomerType type;
     private String docType;
     private String docNumber;
+    private String perfil;
 }

@@ -24,6 +24,8 @@ public class AccountDto {
     @NotBlank(message = "Account number is required")
     private String accountNumber;
 
+    private double openingAmount;
+
 
     // Specific fields for each account type
     private Double maintenanceFee; // Only for checking accounts libre mantenimiento

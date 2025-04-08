@@ -1,32 +1,37 @@
 package com.bootcamp.account.reglas;
 
+import com.bootcamp.account.client.CreditoClient;
 import com.bootcamp.account.enums.CustomerType;
 
 import java.util.List;
 
 public class ValidationChainFactory {
-    public static AccountValidationChain forCustomerType(CustomerType type) {
+    public static AccountValidationChain forCustomerType(CustomerType type, CreditoClient creditoClient) {
         return new AccountValidationChain(
             type == CustomerType.PERSONAL
-                ? personalValidations()
-                : businessValidations()
+                ? personalValidations(creditoClient)
+                : businessValidations(creditoClient)
         );
     }
 
-    private static List<AccountValidation> personalValidations() {
+    private static List<AccountValidation> personalValidations(CreditoClient creditoClient) {
         return List.of(
             PersonalAccountValidations.maxOneSavingsAccount(),
             PersonalAccountValidations.maxOneCheckingAccount(),
             PersonalAccountValidations.noTieneTitulares(),
-            PersonalAccountValidations.noTieneFirmantes()
+            PersonalAccountValidations.noTieneFirmantes(),
+            PersonalAccountValidations.requiredCreditCard(creditoClient)
         );
     }
 
-    private static List<AccountValidation> businessValidations() {
+    private static List<AccountValidation> businessValidations(CreditoClient creditoClient) {
         return List.of(
             BusinessAccountValidations.noSavingsAccounts(),
             BusinessAccountValidations.noFixedTermAccounts(),
-            BusinessAccountValidations.atLeastOneHolder()
+            BusinessAccountValidations.atLeastOneHolder(),
+                BusinessAccountValidations.requiredCreditCard(creditoClient)
         );
     }
+
+
 }

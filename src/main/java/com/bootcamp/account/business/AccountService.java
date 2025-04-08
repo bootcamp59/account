@@ -1,5 +1,6 @@
 package com.bootcamp.account.business;
 
+import com.bootcamp.account.client.CreditoClient;
 import com.bootcamp.account.enums.AccountType;
 import com.bootcamp.account.enums.CustomerType;
 import com.bootcamp.account.error.AccountErrorResponse;
@@ -29,6 +30,7 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final WebClient.Builder webClientBuilder;
+    private final CreditoClient creditoClient;
 
     public Flux<Account> findAll() {
         return accountRepository.findAll();
@@ -52,12 +54,10 @@ public class AccountService {
         return Mono.just(account)
             .flatMap(this::fetchCustomerData)
                 .flatMap(customer -> {
-                    AccountValidationChain chain = ValidationChainFactory.forCustomerType(customer.getType());
+                    AccountValidationChain chain = ValidationChainFactory.forCustomerType(customer.getType(), creditoClient);
                     return chain.execute(account, customer, accountRepository)
                             .then(saveNewAccount(account));
                 });
-
-
     }
 
     private Mono<CustomerDto> fetchCustomerData(Account account) {
@@ -138,6 +138,9 @@ public class AccountService {
     }
 
     private void validaciones(AccountDto request){
+        if(request.getOpeningAmount() < 0){
+            throw new RuntimeException("Monto de apertura de cuenta debe ser minimo de 0");
+        }
         if(request.getType() == AccountType.AHORRO){
             if(request.getMaintenanceFee() != null && request.getMaintenanceFee() > 0){
                 throw new RuntimeException("Cuenta de ahorro esta libre de comisión por mantenimiento");
