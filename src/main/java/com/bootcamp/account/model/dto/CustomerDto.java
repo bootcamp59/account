@@ -1,6 +1,7 @@
 package com.bootcamp.account.model.dto;
 
 import com.bootcamp.account.enums.CustomerType;
+import com.bootcamp.account.enums.PerfilType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,5 +20,5 @@ public class CustomerDto {
     private CustomerType type;
     private String docType;
     private String docNumber;
-    private String perfil;
+    private PerfilType perfil;
 }

@@ -2,8 +2,7 @@ package com.bootcamp.account.reglas;
 
 import com.bootcamp.account.client.CreditoClient;
 import com.bootcamp.account.enums.AccountType;
-import com.bootcamp.account.enums.CustomerType;
-import com.bootcamp.account.model.entity.Account;
+import com.bootcamp.account.enums.PerfilType;
 import reactor.core.publisher.Mono;
 
 public class PersonalAccountValidations {
@@ -62,7 +61,7 @@ public class PersonalAccountValidations {
         return (account, customer, repo) -> {
             var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getId();
             if(account.getType() == AccountType.AHORRO){
-                if(customer.getPerfil().equalsIgnoreCase("VIP")){
+                if(customer.getPerfil() == PerfilType.VIP){
                     return creditoClient.get(url)
                         .hasElements()
                         .flatMap(hasCredit -> {
@@ -76,6 +75,16 @@ public class PersonalAccountValidations {
 
             }
             return Mono.empty();
+        };
+    }
+
+    public static AccountValidation requiredPromedioMinimoDiarioMensual(CreditoClient creditoClient) {
+        return (account, customer, repo) -> {
+                if(account.getType() == AccountType.AHORRO && customer.getPerfil() == PerfilType.VIP && account.getPromedioDiarioMinimoMensual() == 0){
+                    return Mono.error(new RuntimeException("Cuenta de ahorro debe tener un monto minimo de promedio diario mensual"));
+                } else {
+                    return Mono.empty();
+            }
         };
     }
 

@@ -3,7 +3,6 @@ package com.bootcamp.account.business;
 import com.bootcamp.account.client.CreditoClient;
 import com.bootcamp.account.enums.AccountType;
 import com.bootcamp.account.enums.CustomerType;
-import com.bootcamp.account.error.AccountErrorResponse;
 import com.bootcamp.account.mapper.AccountMapper;
 import com.bootcamp.account.model.dto.AccountDto;
 import com.bootcamp.account.model.entity.Account;
@@ -16,13 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
-
-import java.lang.reflect.Field;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +30,10 @@ public class AccountService {
     }
 
     public Mono<Account> findById(String id) {
-        return accountRepository.findById(id);
+        return accountRepository.findById(id)
+                .doOnNext(e -> {
+                    System.out.println(e);;
+                });
     }
 
     public Flux<Account> findByCustomerId(String customerId) {
@@ -148,14 +144,14 @@ public class AccountService {
             if(request.getMonthlyTransactionLimit() == null || request.getMonthlyTransactionLimit() == 0){
                 throw new RuntimeException("Cuenta de ahorro debe tener un limite maximo de movimientos mensual");
             }
+
+
         }
         if(request.getType() == AccountType.CUENTA_CORRIENTE){
-            if(request.getMaintenanceFee() == null || request.getMaintenanceFee() == 0){
-                throw new RuntimeException("Cuenta corriente debe tener una comisión por mantenimiento");
-            }
             if(request.getMonthlyTransactionLimit() > 0 ){
                 throw new RuntimeException("Cuenta corriente no debe tener limite de movimientos");
             }
+
         }
         if(request.getType() == AccountType.PLAZO_FIJO){
             if(request.getMaintenanceFee() != null && request.getMaintenanceFee() > 0){

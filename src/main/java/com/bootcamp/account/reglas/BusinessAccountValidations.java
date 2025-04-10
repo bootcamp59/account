@@ -2,6 +2,7 @@ package com.bootcamp.account.reglas;
 
 import com.bootcamp.account.client.CreditoClient;
 import com.bootcamp.account.enums.AccountType;
+import com.bootcamp.account.enums.PerfilType;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -32,7 +33,7 @@ public class BusinessAccountValidations {
         return (account, customer, repo) -> {
             var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getId();
             if(account.getType() == AccountType.CUENTA_CORRIENTE){
-                if(customer.getPerfil().equalsIgnoreCase("PYME")){
+                if(customer.getPerfil() == PerfilType.PYME){
                     return creditoClient.get(url)
                         .hasElements()
                         .flatMap(hasCredit -> {
@@ -46,6 +47,26 @@ public class BusinessAccountValidations {
 
             }
             return Mono.empty();
+        };
+    }
+
+    public static AccountValidation withMaintenanceFee() {
+        return (account, customer, repo) -> {
+            if(account.getType() == AccountType.CUENTA_CORRIENTE && customer.getPerfil() == PerfilType.NORMAL && ( account.getMaintenanceFee() == null || account.getMaintenanceFee() == 0)){
+                return Mono.error(new RuntimeException("Cuenta corriente debe tener una comisión por mantenimiento"));
+            } else {
+                return Mono.empty();
+            }
+        };
+    }
+
+    public static AccountValidation withoutMaintenanceFee() {
+        return (account, customer, repo) -> {
+            if(account.getType() == AccountType.CUENTA_CORRIENTE && customer.getPerfil() == PerfilType.PYME && account.getMaintenanceFee() > 0){
+                return Mono.error(new RuntimeException("Cuenta corriente empresarial PYME no debe tener comision de mantenimiento"));
+            } else {
+                return Mono.empty();
+            }
         };
     }
 

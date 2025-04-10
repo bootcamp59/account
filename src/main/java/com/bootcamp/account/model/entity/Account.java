@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,6 +36,9 @@ public class Account {
     @Min(value = 0, message = "Balance cannot be negative")
     private double balance;
 
+    //PARA PERSONA VIP
+    private double promedioDiarioMinimoMensual;
+
     private LocalDateTime openingDate;
     private LocalDateTime lastTransactionDate;
 
@@ -42,6 +46,8 @@ public class Account {
     private Double maintenanceFee; // Only for checking accounts libre mantenimiento
     private Integer monthlyTransactionLimit; // limite de movimientos mensuales
     private Integer allowedDayOfMonth; //dia del mes para su deposito o retiro
+    private Integer maximoTransacionSinComision;
+    private Double commissionRate;
 
     private List<String> titulares; // For business accounts (multiple holders) titulares
     private List<String> authorizedSigners; // For business accounts firmantes

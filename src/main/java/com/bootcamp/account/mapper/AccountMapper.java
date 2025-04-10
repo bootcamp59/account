@@ -14,6 +14,8 @@ public class AccountMapper {
                 .authorizedSigners(dto.getAuthorizedSigners())
                 .allowedDayOfMonth(dto.getAllowedDayOfMonth())
                 .maintenanceFee(dto.getMaintenanceFee())
+                .commissionRate(dto.getCommissionRate())
+                .maximoTransacionSinComision(dto.getMaximoTransacionSinComision())
                 .monthlyTransactionLimit(dto.getMonthlyTransactionLimit())
                 .build();
     }

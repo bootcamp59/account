@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -25,6 +27,11 @@ public class AccountDto {
     private String accountNumber;
 
     private double openingAmount;
+
+    private double promedioDiarioMinimoMensual;
+
+    private Integer maximoTransacionSinComision;
+    private Double commissionRate;
 
 
     // Specific fields for each account type

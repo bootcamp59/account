@@ -20,7 +20,9 @@ public class ValidationChainFactory {
             PersonalAccountValidations.maxOneCheckingAccount(),
             PersonalAccountValidations.noTieneTitulares(),
             PersonalAccountValidations.noTieneFirmantes(),
+            PersonalAccountValidations.requiredPromedioMinimoDiarioMensual(creditoClient),
             PersonalAccountValidations.requiredCreditCard(creditoClient)
+
         );
     }
 
@@ -28,8 +30,10 @@ public class ValidationChainFactory {
         return List.of(
             BusinessAccountValidations.noSavingsAccounts(),
             BusinessAccountValidations.noFixedTermAccounts(),
+            BusinessAccountValidations.withMaintenanceFee(),
             BusinessAccountValidations.atLeastOneHolder(),
-                BusinessAccountValidations.requiredCreditCard(creditoClient)
+            BusinessAccountValidations.withoutMaintenanceFee(),
+            BusinessAccountValidations.requiredCreditCard(creditoClient)
         );
     }
 
