@@ -23,6 +23,8 @@ public class AccountDto {
     @NotNull(message = "Account type is required")
     private AccountType type;
 
+    private String bankId;
+
     @NotBlank(message = "Account number is required")
     private String accountNumber;
 

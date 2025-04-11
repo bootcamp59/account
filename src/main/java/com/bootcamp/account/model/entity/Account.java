@@ -27,6 +27,9 @@ public class Account {
     @NotBlank(message = "Customer ID is required")
     private String customerId;
 
+    @NotBlank(message = "Bank ID is required")
+    private String bankId;
+
     @NotNull(message = "Account type is required")
     private AccountType type;
 

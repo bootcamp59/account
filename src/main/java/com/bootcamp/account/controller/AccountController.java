@@ -29,6 +29,13 @@ public class AccountController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/account-number/{id}")
+    public Mono<ResponseEntity<Account>> findByAccountNumber(@PathVariable String id){
+        return service.findById(id)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/customer/{id}")
     public Flux<Account> findByCustomerId(@PathVariable String id){
         return service.findByCustomerId(id);

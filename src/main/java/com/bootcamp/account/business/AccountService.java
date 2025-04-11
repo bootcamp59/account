@@ -36,6 +36,13 @@ public class AccountService {
                 });
     }
 
+    public Mono<Account> findByAccountNumber(String accountNumber) {
+        return accountRepository.findByAccountNumber(accountNumber)
+                .doOnNext(e -> {
+                    System.out.println(e);;
+                });
+    }
+
     public Flux<Account> findByCustomerId(String customerId) {
         return accountRepository.findByCustomerId(customerId);
     }
