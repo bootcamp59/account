@@ -31,7 +31,7 @@ public class AccountController {
 
     @GetMapping("/account-number/{id}")
     public Mono<ResponseEntity<Account>> findByAccountNumber(@PathVariable String id){
-        return service.findById(id)
+        return service.findByAccountNumber(id)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
