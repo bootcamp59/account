@@ -9,19 +9,18 @@ import com.bootcamp.account.model.entity.Account;
 import com.bootcamp.account.model.dto.CustomerDto;
 import com.bootcamp.account.reglas.AccountValidationChain;
 import com.bootcamp.account.reglas.ValidationChainFactory;
-import com.bootcamp.account.repository.AccountRepository;
+import com.bootcamp.account.repository.AccountRepositoryDepre;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 
-@Service
+
 @RequiredArgsConstructor
 public class AccountService {
 
-    private final AccountRepository accountRepository;
+    private final AccountRepositoryDepre accountRepository;
     private final WebClient.Builder webClientBuilder;
     private final CreditoClient creditoClient;
 

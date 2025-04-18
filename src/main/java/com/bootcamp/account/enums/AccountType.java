@@ -1,7 +1,7 @@
 package com.bootcamp.account.enums;
 
 import com.bootcamp.account.model.dto.CustomerDto;
-import com.bootcamp.account.repository.AccountRepository;
+import com.bootcamp.account.repository.AccountRepositoryDepre;
 import reactor.core.publisher.Mono;
 
 import java.util.function.BiFunction;
@@ -13,17 +13,17 @@ public enum AccountType {
 
     PLAZO_FIJO(buildplazoFijoValidator());
 
-    private final BiFunction<CustomerDto, AccountRepository, Mono<Void>> validator;
+    private final BiFunction<CustomerDto, AccountRepositoryDepre, Mono<Void>> validator;
 
-    AccountType(BiFunction<CustomerDto, AccountRepository, Mono<Void>> validator) {
+    AccountType(BiFunction<CustomerDto, AccountRepositoryDepre, Mono<Void>> validator) {
         this.validator = validator;
     }
 
-    public Mono<Void> validate(CustomerDto customer, AccountRepository repo) {
+    public Mono<Void> validate(CustomerDto customer, AccountRepositoryDepre repo) {
         return validator.apply(customer, repo);
     }
 
-    private static BiFunction<CustomerDto, AccountRepository, Mono<Void>> buildAhorroValidator() {
+    private static BiFunction<CustomerDto, AccountRepositoryDepre, Mono<Void>> buildAhorroValidator() {
         return (customer, repo) -> {
             return customer.getType() != CustomerType.PERSONAL
                 ? Mono.error(new RuntimeException("Solo clientes personales"))
@@ -39,7 +39,7 @@ public enum AccountType {
         };
     }
 
-    private static BiFunction<CustomerDto, AccountRepository, Mono<Void>> buildCorrienteValidator() {
+    private static BiFunction<CustomerDto, AccountRepositoryDepre, Mono<Void>> buildCorrienteValidator() {
         return (customer, repo) -> customer.getType() == CustomerType.PERSONAL
                 ? repo.findByCustomerIdAndType(customer.getId(), CUENTA_CORRIENTE)
                 .count()
@@ -52,7 +52,7 @@ public enum AccountType {
                 : Mono.empty();
     }
 
-    private static BiFunction<CustomerDto, AccountRepository, Mono<Void>> buildplazoFijoValidator() {
+    private static BiFunction<CustomerDto, AccountRepositoryDepre, Mono<Void>> buildplazoFijoValidator() {
         return (customer, repo) -> {
             return customer.getType() != CustomerType.PERSONAL
                 ? Mono.error(new RuntimeException("Solo clientes personales"))

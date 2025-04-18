@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface AccountRepository extends ReactiveMongoRepository<Account, String> {
+public interface AccountRepositoryDepre extends ReactiveMongoRepository<Account, String> {
     Flux<Account> findByCustomerId(String customerId);
     Flux<Account> findByCustomerIdAndType(String customerId, AccountType type);
     Mono<Account> findByAccountNumber(String accountNumber);

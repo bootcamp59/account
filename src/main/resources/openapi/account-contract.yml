@@ -10,8 +10,6 @@ info:
     email: cuentas@nttdata.com
 
 servers:
-  - url: https://api.bank.com/account-service/v1
-    description: Servidor de producción
   - url: http://localhost:8082/api/v1
     description: Servidor local de desarrollo
 
@@ -33,6 +31,7 @@ paths:
         - Cliente debe existir
         - Restricciones por tipo de cliente (PERSONAL/BUSINESS)
         - Límites de productos permitidos
+      operationId: create
       requestBody:
         required: true
         content:
@@ -43,13 +42,13 @@ paths:
               savingsAccount:
                 value:
                   type: "SAVINGS"
-                  customerId: "5f8d8a7b2f4d4b1d9c3e3f1a"
+                  dni: "5f8d8a7b2f4d4b1d9c3e3f1a"
                   currency: "PEN"
                   initialBalance: 1000.00
               checkingAccount:
                 value:
                   type: "CHECKING"
-                  customerId: "5f8d8a7b2f4d4b1d9c3e3f2b"
+                  dni: "5f8d8a7b2f4d4b1d9c3e3f2b"
                   currency: "USD"
                   holders: ["5f8d8a7b2f4d4b1d9c3e3f2b", "5f8d8a7b2f4d4b1d9c3e3f2c"]
                   signers: ["5f8d8a7b2f4d4b1d9c3e3f2d"]
@@ -76,19 +75,7 @@ paths:
       tags: [Accounts]
       summary: Listar cuentas (admin)
       description: Lista paginada de todas las cuentas (solo para administradores)
-      parameters:
-        - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/size'
-        - name: type
-          in: query
-          description: Filtrar por tipo de cuenta
-          schema:
-            $ref: '#/components/schemas/AccountType'
-        - name: status
-          in: query
-          description: Filtrar por estado
-          schema:
-            $ref: '#/components/schemas/AccountStatus'
+      operationId: findAll
       responses:
         '200':
           description: Lista de cuentas
@@ -99,12 +86,13 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /accounts/{accountId}:
+  /accounts/{productoId}:
     get:
       tags: [Accounts]
       summary: Obtener detalles de cuenta
+      operationId: findByProductoId
       parameters:
-        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/productoId'
       responses:
         '200':
           description: Detalles completos de la cuenta
@@ -115,38 +103,13 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-    patch:
-      tags: [Accounts]
-      summary: Actualizar cuenta parcialmente
-      description: Actualiza campos específicos de una cuenta (solo campos permitidos)
-      parameters:
-        - $ref: '#/components/parameters/accountId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AccountUpdateRequest'
-      responses:
-        '200':
-          description: Cuenta actualizada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AccountDetails'
-        '400':
-          $ref: '#/components/responses/InvalidRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /accounts/customer/{customerId}:
+  /accounts/customer/{dni}:
     get:
       tags: [Accounts]
       summary: Listar cuentas por cliente
+      operationId: findByDni
       parameters:
-        - $ref: '#/components/parameters/customerId'
-        - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/dni'
       responses:
         '200':
           description: Lista de cuentas del cliente
@@ -157,12 +120,13 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /accounts/{accountId}/deposits:
+  /accounts/{productoId}/deposits:
     post:
       tags: [AccountTransactions]
       summary: Realizar depósito
+      operationId: deposit
       parameters:
-        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/productoId'
       requestBody:
         required: true
         content:
@@ -185,12 +149,13 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /accounts/{accountId}/withdrawals:
+  /accounts/{productoId}/withdrawals:
     post:
       tags: [AccountTransactions]
       summary: Realizar retiro
+      operationId: withdrawal
       parameters:
-        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/productoId'
       requestBody:
         required: true
         content:
@@ -217,12 +182,13 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /accounts/{accountId}/balance:
+  /accounts/{productoId}/balance:
     get:
       tags: [AccountBalances]
       summary: Consultar saldo
+      operationId: checkBalance
       parameters:
-        - $ref: '#/components/parameters/accountId'
+        - $ref: '#/components/parameters/productoId'
       responses:
         '200':
           description: Saldo actual
@@ -233,49 +199,17 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /accounts/{accountId}/transactions:
-    get:
-      tags: [AccountBalances]
-      summary: Listar transacciones
-      parameters:
-        - $ref: '#/components/parameters/accountId'
-        - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/size'
-        - name: startDate
-          in: query
-          schema:
-            type: string
-            format: date-time
-        - name: endDate
-          in: query
-          schema:
-            type: string
-            format: date-time
-        - name: type
-          in: query
-          schema:
-            $ref: '#/components/schemas/TransactionType'
-      responses:
-        '200':
-          description: Lista de transacciones
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TransactionListResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
 components:
   schemas:
     # Tipos enumerados
     AccountType:
       type: string
-      enum: [SAVINGS, CHECKING, FIXED_TERM]
+      enum: [AHORRO, CORRIENTE, PLAZO_FIJO]
       description: |
-        SAVINGS - Cuenta de ahorros (límite de movimientos)
-        CHECKING - Cuenta corriente (comisión de mantenimiento)
-        FIXED_TERM - Plazo fijo (solo un movimiento por mes)
-      example: "SAVINGS"
+        AHORRO - Cuenta de ahorros (límite de movimientos)
+        CORRIENTE - Cuenta corriente (comisión de mantenimiento)
+        PLAZO_FIJO - Plazo fijo (solo un movimiento por mes)
+      example: "AHORRO"
 
     AccountStatus:
       type: string
@@ -297,7 +231,7 @@ components:
       properties:
         type:
           $ref: '#/components/schemas/AccountType'
-        customerId:
+        dni:
           type: string
           format: uuid
           description: ID del cliente titular
@@ -322,7 +256,7 @@ components:
           description: Lista de IDs de firmantes autorizados
       required:
         - type
-        - customerId
+        - dni
         - currency
 
     AccountDetails:
@@ -350,7 +284,7 @@ components:
           readOnly: true
         currency:
           $ref: '#/components/schemas/CurrencyCode'
-        customerId:
+        dni:
           type: string
           format: uuid
         holders:
@@ -412,24 +346,9 @@ components:
             format: uuid
 
     AccountListResponse:
-      type: object
-      properties:
-        content:
-          type: array
-          items:
-            $ref: '#/components/schemas/AccountDetails'
-        page:
-          type: integer
-          example: 0
-        size:
-          type: integer
-          example: 20
-        totalElements:
-          type: integer
-          example: 100
-        totalPages:
-          type: integer
-          example: 5
+      type: array
+      items:
+        $ref: '#/components/schemas/AccountDetails'
 
     # Esquemas para transacciones
     DepositRequest:
@@ -479,7 +398,7 @@ components:
           type: string
           format: uuid
           example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
-        accountId:
+        productoId:
           type: string
           format: uuid
         newBalance:
@@ -496,14 +415,10 @@ components:
     BalanceResponse:
       type: object
       properties:
-        accountId:
+        productoId:
           type: string
           format: uuid
         balance:
-          type: number
-          format: double
-          example: 1500.00
-        availableBalance:
           type: number
           format: double
           example: 1500.00
@@ -578,8 +493,8 @@ components:
             type: string
 
   parameters:
-    accountId:
-      name: accountId
+    productoId:
+      name: productoId
       in: path
       required: true
       description: ID único de la cuenta
@@ -588,8 +503,8 @@ components:
         format: uuid
         example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
 
-    customerId:
-      name: customerId
+    dni:
+      name: dni
       in: path
       required: true
       description: ID único del cliente
