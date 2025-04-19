@@ -23,6 +23,6 @@ public class CreditoClient {
             .doOnNext(f -> {
                 log.info("conexion exitosa al serivicio: {}", url);
             })
-            .onErrorReturn(false);
+            .onErrorReturn(new RuntimeException("no se pudo conectar con: " + url));
     }
 }

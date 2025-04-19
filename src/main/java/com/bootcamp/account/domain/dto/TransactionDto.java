@@ -31,4 +31,5 @@ public class TransactionDto {
     private LocalDateTime transactionDate;
 
     private Double transactionCommission;
+    private double transaccionesSinComision;
 }

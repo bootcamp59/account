@@ -32,6 +32,7 @@ public class AccountService implements AccountUseCase {
 
     @Override
     public Mono<Account> create(Account model) {
+        validaciones(model);
         return Mono.just(model)
             .flatMap(this::fetchCustomerData)
             .flatMap(customer -> {
@@ -53,8 +54,8 @@ public class AccountService implements AccountUseCase {
 
     @Override
     public Mono<DepositDto> deposit(DepositDto dto) {
-        return port.findByProductoId(dto.getProductId())
-            .switchIfEmpty(Mono.error(new IllegalArgumentException("Account not found for productId: " + dto.getProductId())))
+        return port.findByProductoId(dto.getDestinyProductId())
+            .switchIfEmpty(Mono.error(new IllegalArgumentException("Account not found for productId: " + dto.getDestinyProductId())))
             .flatMap( account -> {
                 account.deposit(dto.getAmount());
                 return port.update(account);
@@ -72,30 +73,72 @@ public class AccountService implements AccountUseCase {
 
     @Override
     public Mono<DepositDto> withdraw(DepositDto dto) {
-        return port.findByProductoId(dto.getProductId())
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Account not found for productId: " + dto.getProductId())))
-                .flatMap( account -> {
-                    account.withdraw(dto.getAmount());
-                    return port.update(account);
-                })
-                .flatMap(account -> {
-                    var movementDto = buildTransactionRequest(dto, account, TransactionType.RETIRO);
-                    return saveMovements(movementDto);
-                })
-                .thenReturn(dto)
-                .onErrorResume(error -> {
-                    System.out.println("Error during deposit: " + error.getMessage());
-                    return Mono.error(new RuntimeException("Error while processing deposit: " + error.getMessage()));
-                });
+        return port.findByProductoId(dto.getDestinyProductId())
+            .switchIfEmpty(Mono.error(new IllegalArgumentException("Account not found for productId: " + dto.getDestinyProductId())))
+            .flatMap( account -> {
+                account.withdraw(dto.getAmount());
+                return port.update(account);
+            })
+            .flatMap(account -> {
+                var movementDto = buildTransactionRequest(dto, account, TransactionType.RETIRO);
+                return saveMovements(movementDto);
+            })
+            .thenReturn(dto)
+            .onErrorResume(error -> {
+                System.out.println("Error during deposit: " + error.getMessage());
+                return Mono.error(new RuntimeException("Error while processing deposit: " + error.getMessage()));
+            });
+    }
+
+    @Override
+    public Mono<DepositDto> transfer(DepositDto dto) {
+
+        var origenMono = port.findByProductoId(dto.getOriginProductId());
+        var destinoMono = port.findByProductoId(dto.getDestinyProductId());
+
+        return Mono.zip(origenMono, destinoMono)
+            .flatMap( tuple -> {
+                Account origen = tuple.getT1();
+                Account destino = tuple.getT2();
+
+                log.info("Iniciando transferencia de {} desde producto {} hacia producto {}",
+                        dto.getAmount(), dto.getOriginProductId(), dto.getDestinyProductId());
+
+                if(!origen.getDocument().equals(destino.getDocument())){
+                    if(!origen.getBanco().equals(destino.getBanco())){
+                        String error = String.format("Transferencia rechazada: solo se permiten transferencias a terceros dentro del mismo banco.");
+                        log.warn(error);
+                        return Mono.error(new IllegalStateException(error));
+                    }
+                }
+
+                if(origen.getSaldo() < dto.getAmount()){
+                    String error = String.format("Saldo insuficiente en el producto origen [%s]", dto.getOriginProductId());
+                    log.warn(error);
+                    return Mono.error(new IllegalStateException(error));
+                }
+
+                origen.withdraw(dto.getAmount());
+                destino.transfer(dto.getAmount());
+
+                return Mono.when(
+                    port.update(origen)
+                        .doOnSuccess(o -> log.info("Producto origen [{}] actualizado correctamente.", origen.getProductoId()))
+                        .doOnError(e -> log.error("Error al actualizar producto origen [{}]: {}", origen.getProductoId(), e.getMessage())),
+                    port.update(destino)
+                        .doOnSuccess(d -> log.info("Producto destino [{}] actualizado correctamente.", destino.getProductoId()))
+                        .doOnError(e -> log.error("Error al actualizar producto destino [{}]: {}", destino.getProductoId(), e.getMessage()))
+                ).thenReturn(dto);
+            });
     }
 
     private Mono<CustomerDto> fetchCustomerData(Account account) {
         return webClientBuilder.build()
-                .get()
-                .uri("http://localhost:8085/api/v1/customer/customers/{docNumber}", account.getDocument())
-                .retrieve()
-                .bodyToMono(CustomerDto.class)
-                .map(customer -> customer);
+            .get()
+            .uri("http://localhost:8085/api/v1/customer/customers/{docNumber}", account.getDocument())
+            .retrieve()
+            .bodyToMono(CustomerDto.class)
+            .map(customer -> customer);
     }
 
     private Mono<Account> saveNewAccount(Account account) {
@@ -106,30 +149,41 @@ public class AccountService implements AccountUseCase {
 
     private Mono<Object> saveMovements(TransactionDto transactionDto){
         return webClientBuilder.build()
-                .post()
-                .uri("http://localhost:8084/api/v1/transaction")
-                .accept(MediaType.APPLICATION_JSON)
-                .bodyValue(transactionDto)
-                .retrieve()
-                .bodyToMono(Object.class)
-                .onErrorMap( e -> new RuntimeException("error al enviar la transaccion"))
-                .doOnError(o -> log.error("Error al enviar la transaccion"));
+            .post()
+            .uri("http://localhost:8084/api/v1/transaction")
+            .accept(MediaType.APPLICATION_JSON)
+            .bodyValue(transactionDto)
+            .retrieve()
+            .bodyToMono(Object.class)
+            .onErrorMap( e -> new RuntimeException("error al enviar la transaccion"))
+            .doOnError(o -> log.error("Error al enviar la transaccion"));
     }
 
     private TransactionDto buildTransactionRequest(DepositDto dto, Account account, TransactionType transactionType){
         return TransactionDto.builder()
-                .amount(dto.getAmount())
-                .type(transactionType)
-                .description(dto.getDescription())
-                .origen(Account.builder()
-                        .document(dto.getDocument())
-                        .build())
-                .destino(Account.builder()
-                        .productoId(dto.getProductId())
-                        .document(account.getDocument())
-                        .banco(account.getBanco())
-                        .type(account.getType())
-                        .build())
-                .build();
+            .amount(dto.getAmount())
+            .type(transactionType)
+            .description(dto.getDescription())
+            .origen(Account.builder()
+                .document(dto.getDocument())
+                .build())
+            .destino(Account.builder()
+                .productoId(dto.getDestinyProductId())
+                .document(account.getDocument())
+                .transaccionesSinComision(account.getTransaccionesSinComision())
+                .banco(account.getBanco())
+                .type(account.getType())
+                .build())
+            .transactionCommission(account.getComisionPorTransaccionExcedente())
+            .build();
+    }
+
+    private void validaciones(Account model){
+        if(model.getTransaccionesSinComision() == 0){
+            throw new RuntimeException("Debe registrar cantidad mayor a 0 en  transacciones sin comision");
+        }
+        if(model.getComisionPorTransaccionExcedente() == 0){
+            throw new RuntimeException("Debe registrar el valor de la comision por sobrepasar el limite de transacciones");
+        }
     }
 }

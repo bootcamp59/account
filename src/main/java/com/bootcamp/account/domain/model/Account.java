@@ -45,4 +45,12 @@ public class Account {
         }
         this.saldo = this.saldo - amount;
     }
+
+    public void transfer(double amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Deposit must be positive");
+        }
+        this.saldo = this.saldo + amount;
+    }
+
 }

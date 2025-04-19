@@ -1,6 +1,5 @@
 package com.bootcamp.account.domain.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -8,7 +7,8 @@ import lombok.Data;
 @Data
 public class DepositDto {
     private double amount;
-    private String productId;
+    private String originProductId;
+    private String destinyProductId;
     private String document;
     private String description;
 }

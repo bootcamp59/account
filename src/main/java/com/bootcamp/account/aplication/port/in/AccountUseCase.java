@@ -13,4 +13,5 @@ public interface AccountUseCase {
     Flux<Account> findByDni(String dni);
     Mono<DepositDto> deposit(DepositDto dto);
     Mono<DepositDto> withdraw(DepositDto dto);
+    Mono<DepositDto> transfer(DepositDto dto);
 }

@@ -44,4 +44,9 @@ public class AccountController {
     public Mono<Void> retiro(@RequestBody DepositDto dto){
         return usecase.withdraw(dto).then();
     }
+
+    @PostMapping("/transfer")
+    public Mono<DepositDto> transfer(@RequestBody DepositDto dto){
+        return usecase.transfer(dto);
+    }
 }
