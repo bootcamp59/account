@@ -28,7 +28,8 @@ public class ValidationChainFactory {
             PersonalAccountValidations.maxOneSavingsAccount(),
             PersonalAccountValidations.maxOneCheckingAccount(),
             PersonalAccountValidations.requiredPromedioMinimoDiarioMensual(creditoClient),
-            PersonalAccountValidations.requiredCreditCard(creditoClient)
+            PersonalAccountValidations.requiredCreditCard(creditoClient),
+            PersonalAccountValidations.OverdueDebt(creditoClient)
 
         );
     }
@@ -40,7 +41,8 @@ public class ValidationChainFactory {
             BusinessAccountValidations.withMaintenanceFee(),
             BusinessAccountValidations.atLeastOneHolder(),
             BusinessAccountValidations.withoutMaintenanceFee(),
-            BusinessAccountValidations.requiredCreditCard(creditoClient)
+            BusinessAccountValidations.requiredCreditCard(creditoClient),
+            BusinessAccountValidations.OverdueDebt(creditoClient)
         );
     }
 

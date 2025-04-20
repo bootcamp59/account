@@ -167,6 +167,22 @@ public class PersonalAccountValidations {
         };
     }
 
+    public static AccountValidation OverdueDebt(CreditoClient creditoClient){
+        return (account, customer, repo) -> {
+            var url = "http://localhost:8087/api/v1/credit/customer/{document}/debt" + customer.getDocNumber();
+            return creditoClient.get(url)
+                .hasElements()
+                .flatMap(hastDebt -> {
+                    if (hastDebt) {
+                        return Mono.error(new RuntimeException("No puede adquitir un producto por que tiene una deuda vencida"));
+                    } else {
+                        return Mono.empty();
+                    }
+                });
+
+        };
+    }
+
 
 
 

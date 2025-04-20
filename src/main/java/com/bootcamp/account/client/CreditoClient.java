@@ -21,7 +21,7 @@ public class CreditoClient {
             .retrieve()
             .bodyToFlux(Object.class)
             .doOnNext(f -> {
-                log.info("conexion exitosa al serivicio: {}", url);
+                log.info("conexion exitosa al serivicio: {}", url + f);
             })
             .onErrorReturn(new RuntimeException("no se pudo conectar con: " + url));
     }

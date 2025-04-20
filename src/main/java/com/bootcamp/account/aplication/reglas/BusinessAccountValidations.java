@@ -3,10 +3,12 @@ package com.bootcamp.account.aplication.reglas;
 import com.bootcamp.account.client.CreditoClient;
 import com.bootcamp.account.domain.enums.AccountType;
 import com.bootcamp.account.domain.enums.PerfilType;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
+@Slf4j
 public class BusinessAccountValidations {
     public static AccountValidation noSavingsAccounts() {
         return (account, customer, repo) ->
@@ -31,7 +33,7 @@ public class BusinessAccountValidations {
 
     public static AccountValidation requiredCreditCard(CreditoClient creditoClient) {
         return (account, customer, repo) -> {
-            var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getId();
+            var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getDocNumber();
             if(account.getType() == AccountType.CUENTA_CORRIENTE){
                 if(customer.getPerfil() == PerfilType.PYME){
                     return creditoClient.get(url)
@@ -67,6 +69,24 @@ public class BusinessAccountValidations {
             } else {
                 return Mono.empty();
             }
+        };
+    }
+
+    //tercera entrega
+    public static AccountValidation OverdueDebt(CreditoClient creditoClient){
+        return (account, customer, repo) -> {
+            var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getDocNumber() + "/debt";
+            log.info("peticion a verificar deudas pendientes: "+ url);
+            return creditoClient.get(url)
+                    .hasElements()
+                    .flatMap(hastDebt -> {
+                        if (hastDebt) {
+                            return Mono.error(new RuntimeException("No puede adquitir un producto por que tiene una deuda vencida"));
+                        } else {
+                            return Mono.empty();
+                        }
+                    });
+
         };
     }
 

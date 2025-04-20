@@ -49,7 +49,7 @@ public class AccountService implements AccountUseCase {
 
     @Override
     public Flux<Account> findByDni(String dni) {
-        return findByDni(dni);
+        return port.findByDni(dni);
     }
 
     @Override
