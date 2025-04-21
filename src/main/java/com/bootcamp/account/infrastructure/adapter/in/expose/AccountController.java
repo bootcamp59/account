@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/account")
 @RequiredArgsConstructor
@@ -33,6 +35,11 @@ public class AccountController {
     @GetMapping("/{docNumber}")
     public Flux<Account> findByDocumentNumber(@PathVariable String docNumber){
         return usecase.findByDni(docNumber);
+    }
+
+    @PostMapping("/productIdIn")
+    public Flux<Account> findByProductoIdIn(@RequestBody List<String> docNumber){
+        return usecase.findByProductoIdIn(docNumber);
     }
 
     @PostMapping("/deposit")

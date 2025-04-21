@@ -32,6 +32,9 @@ public class Account {
     private double comisionPorTransaccionExcedente;
     private LocalDateTime fechaUltimaTransacion;
 
+    //solo para enviar a transacion
+    private String cardNumber;
+
     public void deposit(double amount) {
         if (amount < 0) {
             throw new IllegalArgumentException("Deposit must be positive");
@@ -42,6 +45,9 @@ public class Account {
     public void withdraw(double amount) {
         if (amount < 0){
             throw new IllegalArgumentException("Retiro must be positive");
+        }
+        if(amount > this.saldo){
+            throw new RuntimeException("Saldo insuficiente para retirar");
         }
         this.saldo = this.saldo - amount;
     }

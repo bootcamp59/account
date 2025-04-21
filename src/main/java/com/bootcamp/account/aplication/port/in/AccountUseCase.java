@@ -6,6 +6,8 @@ import com.bootcamp.account.domain.model.Account;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 public interface AccountUseCase {
 
     Mono<Account> create(Account model);
@@ -14,4 +16,5 @@ public interface AccountUseCase {
     Mono<DepositDto> deposit(DepositDto dto);
     Mono<DepositDto> withdraw(DepositDto dto);
     Mono<DepositDto> transfer(DepositDto dto);
+    Flux<Account> findByProductoIdIn(List<String> productoIds);
 }

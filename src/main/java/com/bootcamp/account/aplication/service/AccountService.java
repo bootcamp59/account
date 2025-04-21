@@ -20,6 +20,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -105,7 +106,7 @@ public class AccountService implements AccountUseCase {
                         dto.getAmount(), dto.getOriginProductId(), dto.getDestinyProductId());
 
                 if(!origen.getDocument().equals(destino.getDocument())){
-                    if(!origen.getBanco().equals(destino.getBanco())){
+                    if(dto.getTipo().equals("transfer") && !origen.getBanco().equals(destino.getBanco())){
                         String error = String.format("Transferencia rechazada: solo se permiten transferencias a terceros dentro del mismo banco.");
                         log.warn(error);
                         return Mono.error(new IllegalStateException(error));
@@ -128,8 +129,17 @@ public class AccountService implements AccountUseCase {
                     port.update(destino)
                         .doOnSuccess(d -> log.info("Producto destino [{}] actualizado correctamente.", destino.getProductoId()))
                         .doOnError(e -> log.error("Error al actualizar producto destino [{}]: {}", destino.getProductoId(), e.getMessage()))
-                ).thenReturn(dto);
-            });
+                ).thenReturn(dto)
+                .flatMap(result -> {
+                    var movementDto = buildTransactionRequestTransfer(dto, origen, destino, TransactionType.TRANSFER);
+                    return saveMovements(movementDto);
+                });
+            }).thenReturn(dto);
+    }
+
+    @Override
+    public Flux<Account> findByProductoIdIn(List<String> productoIds) {
+        return port.findByProductoIdIn(productoIds);
     }
 
     private Mono<CustomerDto> fetchCustomerData(Account account) {
@@ -166,6 +176,7 @@ public class AccountService implements AccountUseCase {
             .description(dto.getDescription())
             .origen(Account.builder()
                 .document(dto.getDocument())
+                .productoId(dto.getOriginProductId())
                 .build())
             .destino(Account.builder()
                 .productoId(dto.getDestinyProductId())
@@ -176,6 +187,30 @@ public class AccountService implements AccountUseCase {
                 .build())
             .transactionCommission(account.getComisionPorTransaccionExcedente())
             .build();
+    }
+
+    private TransactionDto buildTransactionRequestTransfer(DepositDto dto,Account origen, Account destino, TransactionType transactionType){
+        return TransactionDto.builder()
+                .amount(dto.getAmount())
+                .type(transactionType)
+                .description(dto.getDescription())
+                .origen(Account.builder()
+                        .document(origen.getDocument())
+                        .cardNumber(dto.getCardNumber())
+                        .productoId(origen.getProductoId())
+                        .banco(origen.getBanco())
+                        .type(origen.getType())
+                        .build())
+                .destino(Account.builder()
+                        .productoId(dto.getDestinyProductId())
+                        .document(destino.getDocument())
+                        .cardNumber(destino.getCardNumber())
+                        .transaccionesSinComision(destino.getTransaccionesSinComision())
+                        .banco(destino.getBanco())
+                        .type(destino.getType())
+                        .build())
+                .transactionCommission(destino.getComisionPorTransaccionExcedente())
+                .build();
     }
 
     private void validaciones(Account model){

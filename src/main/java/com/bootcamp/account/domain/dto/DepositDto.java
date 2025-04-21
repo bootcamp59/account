@@ -7,8 +7,10 @@ import lombok.Data;
 @Data
 public class DepositDto {
     private double amount;
+    private String cardNumber;
     private String originProductId;
     private String destinyProductId;
     private String document;
     private String description;
+    private String tipo;
 }

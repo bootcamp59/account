@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Repository
 @RequiredArgsConstructor
 public class AccountAdapter implements AccountRepositoryPort {
@@ -51,6 +53,12 @@ public class AccountAdapter implements AccountRepositoryPort {
     @Override
     public Flux<Account> findByDniAndType(String document, AccountType type) {
         return repository.findByDniAndType(document, type)
+            .map(AccountEntityMapper::toModel);
+    }
+
+    @Override
+    public Flux<Account> findByProductoIdIn(List<String> productoIds) {
+        return repository.findByProductoIdIn(productoIds)
             .map(AccountEntityMapper::toModel);
     }
 
