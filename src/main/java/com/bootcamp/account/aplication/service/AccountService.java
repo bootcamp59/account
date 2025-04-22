@@ -145,7 +145,7 @@ public class AccountService implements AccountUseCase {
     private Mono<CustomerDto> fetchCustomerData(Account account) {
         return webClientBuilder.build()
             .get()
-            .uri("http://localhost:8085/api/v1/customer/customers/{docNumber}", account.getDocument())
+            .uri("http://CUSTOMER/api/v1/customer/customers/{docNumber}", account.getDocument())
             .retrieve()
             .bodyToMono(CustomerDto.class)
             .map(customer -> customer);
@@ -160,7 +160,7 @@ public class AccountService implements AccountUseCase {
     private Mono<Object> saveMovements(TransactionDto transactionDto){
         return webClientBuilder.build()
             .post()
-            .uri("http://localhost:8084/api/v1/transaction")
+            .uri("http://TRANSACTION/api/v1/transaction")
             .accept(MediaType.APPLICATION_JSON)
             .bodyValue(transactionDto)
             .retrieve()
