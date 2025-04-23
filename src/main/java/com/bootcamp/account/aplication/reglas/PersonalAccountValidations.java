@@ -1,6 +1,6 @@
 package com.bootcamp.account.aplication.reglas;
 
-import com.bootcamp.account.client.CreditoClient;
+import com.bootcamp.account.infrastructure.adapter.out.client.CreditServiceAdapter;
 import com.bootcamp.account.domain.enums.AccountType;
 import com.bootcamp.account.domain.enums.PerfilType;
 import reactor.core.publisher.Mono;
@@ -59,12 +59,12 @@ public class PersonalAccountValidations {
 
 
 
-    public static AccountValidation requiredCreditCard(CreditoClient creditoClient) {
+    public static AccountValidation requiredCreditCard(CreditServiceAdapter creditServiceAdapter) {
         return (account, customer, repo) -> {
             var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getId();
             if(account.getType() == AccountType.AHORRO){
                 if(customer.getPerfil() == PerfilType.VIP){
-                    return creditoClient.get(url)
+                    return creditServiceAdapter.get(url)
                         .hasElements()
                         .flatMap(hasCredit -> {
                             if (hasCredit) {
@@ -80,7 +80,7 @@ public class PersonalAccountValidations {
         };
     }
 
-    public static AccountValidation requiredPromedioMinimoDiarioMensual(CreditoClient creditoClient) {
+    public static AccountValidation requiredPromedioMinimoDiarioMensual(CreditServiceAdapter creditServiceAdapter) {
         return (account, customer, repo) -> {
                 if(account.getType() == AccountType.AHORRO && customer.getPerfil() == PerfilType.VIP && account.getMontoNimimoPromedioMensual() == 0){
                     return Mono.error(new RuntimeException("Cuenta de ahorro debe tener un monto minimo de promedio diario mensual"));
@@ -167,10 +167,10 @@ public class PersonalAccountValidations {
         };
     }
 
-    public static AccountValidation OverdueDebt(CreditoClient creditoClient){
+    public static AccountValidation OverdueDebt(CreditServiceAdapter creditServiceAdapter){
         return (account, customer, repo) -> {
             var url = "http://localhost:8087/api/v1/credit/customer/{document}/debt" + customer.getDocNumber();
-            return creditoClient.get(url)
+            return creditServiceAdapter.get(url)
                 .hasElements()
                 .flatMap(hastDebt -> {
                     if (hastDebt) {

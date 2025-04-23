@@ -2,23 +2,20 @@ package com.bootcamp.account.aplication.service;
 
 import com.bootcamp.account.aplication.port.in.AccountUseCase;
 import com.bootcamp.account.aplication.port.out.AccountRepositoryPort;
+import com.bootcamp.account.aplication.port.out.CustomerServiceClientPort;
+import com.bootcamp.account.aplication.port.out.TransactionServiceClientPort;
 import com.bootcamp.account.aplication.reglas.AccountValidationChain;
 import com.bootcamp.account.aplication.reglas.ValidationChainFactory;
-import com.bootcamp.account.client.CreditoClient;
+import com.bootcamp.account.infrastructure.adapter.out.client.CreditServiceAdapter;
 import com.bootcamp.account.domain.dto.DepositDto;
 import com.bootcamp.account.domain.dto.TransactionDto;
 import com.bootcamp.account.domain.enums.TransactionType;
 import com.bootcamp.account.domain.model.Account;
-import com.bootcamp.account.domain.dto.CustomerDto;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -28,16 +25,18 @@ import java.util.List;
 public class AccountService implements AccountUseCase {
 
     private final AccountRepositoryPort port;
-    private final WebClient.Builder webClientBuilder;
-    private final CreditoClient creditoClient;
+    private final TransactionServiceClientPort transactionServiceClientPort;
+    private final CreditServiceAdapter creditServiceAdapter;
+    private final CustomerServiceClientPort customerServiceClientPort;
+
 
     @Override
     public Mono<Account> create(Account model) {
         validaciones(model);
         return Mono.just(model)
-            .flatMap(this::fetchCustomerData)
+            .flatMap(customerServiceClientPort::fetchCustomerData)
             .flatMap(customer -> {
-                AccountValidationChain chain = ValidationChainFactory.forCustomerType(customer.getType(), creditoClient);
+                AccountValidationChain chain = ValidationChainFactory.forCustomerType(customer.getType(), creditServiceAdapter);
                 return chain.execute(model, customer, port)
                         .then(saveNewAccount(model));
             });
@@ -63,7 +62,7 @@ public class AccountService implements AccountUseCase {
             })
             .flatMap(account -> {
                 var movementDto = buildTransactionRequest(dto, account, TransactionType.DEPOSIT);
-                return saveMovements(movementDto);
+                return transactionServiceClientPort.saveMovements(movementDto);
             })
             .thenReturn(dto)
             .onErrorResume(error -> {
@@ -82,7 +81,7 @@ public class AccountService implements AccountUseCase {
             })
             .flatMap(account -> {
                 var movementDto = buildTransactionRequest(dto, account, TransactionType.RETIRO);
-                return saveMovements(movementDto);
+                return transactionServiceClientPort.saveMovements(movementDto);
             })
             .thenReturn(dto)
             .onErrorResume(error -> {
@@ -132,7 +131,7 @@ public class AccountService implements AccountUseCase {
                 ).thenReturn(dto)
                 .flatMap(result -> {
                     var movementDto = buildTransactionRequestTransfer(dto, origen, destino, TransactionType.TRANSFER);
-                    return saveMovements(movementDto);
+                    return transactionServiceClientPort.saveMovements(movementDto);
                 });
             }).thenReturn(dto);
     }
@@ -142,31 +141,10 @@ public class AccountService implements AccountUseCase {
         return port.findByProductoIdIn(productoIds);
     }
 
-    private Mono<CustomerDto> fetchCustomerData(Account account) {
-        return webClientBuilder.build()
-            .get()
-            .uri("http://CUSTOMER/api/v1/customer/customers/{docNumber}", account.getDocument())
-            .retrieve()
-            .bodyToMono(CustomerDto.class)
-            .map(customer -> customer);
-    }
-
     private Mono<Account> saveNewAccount(Account account) {
         account.setFechaApertura(LocalDateTime.now());
         account.setFechaUltimaTransacion(LocalDateTime.now());
         return port.create(account);
-    }
-
-    private Mono<Object> saveMovements(TransactionDto transactionDto){
-        return webClientBuilder.build()
-            .post()
-            .uri("http://TRANSACTION/api/v1/transaction")
-            .accept(MediaType.APPLICATION_JSON)
-            .bodyValue(transactionDto)
-            .retrieve()
-            .bodyToMono(Object.class)
-            .onErrorMap( e -> new RuntimeException("error al enviar la transaccion"))
-            .doOnError(o -> log.error("Error al enviar la transaccion"));
     }
 
     private TransactionDto buildTransactionRequest(DepositDto dto, Account account, TransactionType transactionType){

@@ -1,6 +1,6 @@
 package com.bootcamp.account.aplication.reglas;
 
-import com.bootcamp.account.client.CreditoClient;
+import com.bootcamp.account.infrastructure.adapter.out.client.CreditServiceAdapter;
 import com.bootcamp.account.domain.enums.AccountType;
 import com.bootcamp.account.domain.enums.PerfilType;
 import lombok.extern.slf4j.Slf4j;
@@ -31,12 +31,12 @@ public class BusinessAccountValidations {
             .orElseGet(() -> Mono.error(new RuntimeException("Se requiere al menos 1 titular")));
     }
 
-    public static AccountValidation requiredCreditCard(CreditoClient creditoClient) {
+    public static AccountValidation requiredCreditCard(CreditServiceAdapter creditServiceAdapter) {
         return (account, customer, repo) -> {
             var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getDocNumber();
             if(account.getType() == AccountType.CUENTA_CORRIENTE){
                 if(customer.getPerfil() == PerfilType.PYME){
-                    return creditoClient.get(url)
+                    return creditServiceAdapter.get(url)
                         .hasElements()
                         .flatMap(hasCredit -> {
                             if (hasCredit) {
@@ -73,11 +73,11 @@ public class BusinessAccountValidations {
     }
 
     //tercera entrega
-    public static AccountValidation OverdueDebt(CreditoClient creditoClient){
+    public static AccountValidation OverdueDebt(CreditServiceAdapter creditServiceAdapter){
         return (account, customer, repo) -> {
             var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getDocNumber() + "/debt";
             log.info("peticion a verificar deudas pendientes: "+ url);
-            return creditoClient.get(url)
+            return creditServiceAdapter.get(url)
                     .hasElements()
                     .flatMap(hastDebt -> {
                         if (hastDebt) {
