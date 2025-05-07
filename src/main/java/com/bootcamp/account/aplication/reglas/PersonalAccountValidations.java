@@ -61,10 +61,9 @@ public class PersonalAccountValidations {
 
     public static AccountValidation requiredCreditCard(CreditServiceAdapter creditServiceAdapter) {
         return (account, customer, repo) -> {
-            var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getId();
             if(account.getType() == AccountType.AHORRO){
                 if(customer.getPerfil() == PerfilType.VIP){
-                    return creditServiceAdapter.get(url)
+                    return creditServiceAdapter.findByCustomerDocNumber(customer.getDocNumber())
                         .hasElements()
                         .flatMap(hasCredit -> {
                             if (hasCredit) {
@@ -169,8 +168,7 @@ public class PersonalAccountValidations {
 
     public static AccountValidation OverdueDebt(CreditServiceAdapter creditServiceAdapter){
         return (account, customer, repo) -> {
-            var url = "http://localhost:8087/api/v1/credit/customer/{document}/debt" + customer.getDocNumber();
-            return creditServiceAdapter.get(url)
+            return creditServiceAdapter.getOverDueDebit(customer.getDocNumber())
                 .hasElements()
                 .flatMap(hastDebt -> {
                     if (hastDebt) {

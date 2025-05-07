@@ -13,4 +13,5 @@ public class AccoountProperties {
 
     private String msTransactionApi;
     private String msCustomerApi;
+    private String msCreditApi;
 }

@@ -33,10 +33,9 @@ public class BusinessAccountValidations {
 
     public static AccountValidation requiredCreditCard(CreditServiceAdapter creditServiceAdapter) {
         return (account, customer, repo) -> {
-            var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getDocNumber();
             if(account.getType() == AccountType.CUENTA_CORRIENTE){
                 if(customer.getPerfil() == PerfilType.PYME){
-                    return creditServiceAdapter.get(url)
+                    return creditServiceAdapter.findByCustomerDocNumber(customer.getDocNumber())
                         .hasElements()
                         .flatMap(hasCredit -> {
                             if (hasCredit) {
@@ -75,9 +74,7 @@ public class BusinessAccountValidations {
     //tercera entrega
     public static AccountValidation OverdueDebt(CreditServiceAdapter creditServiceAdapter){
         return (account, customer, repo) -> {
-            var url = "http://localhost:8087/api/v1/credit/customer/" + customer.getDocNumber() + "/debt";
-            log.info("peticion a verificar deudas pendientes: "+ url);
-            return creditServiceAdapter.get(url)
+            return creditServiceAdapter.getOverDueDebit(customer.getDocNumber())
                     .hasElements()
                     .flatMap(hastDebt -> {
                         if (hastDebt) {
